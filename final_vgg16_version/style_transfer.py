@@ -377,7 +377,6 @@ def style_transfer(content_image, style_image,
     temp = image.load_img(mixed_image_filename, target_size=(content_image.shape[0], content_image.shape[1]))
     mixed_image = image.img_to_array(temp)
 
-
     for i in range(num_iterations):
         # Create a feed-dict with the mixed-image.
         feed_dict = model.create_feed_dict(image=mixed_image)

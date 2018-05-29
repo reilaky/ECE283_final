@@ -107,17 +107,17 @@ content_image = load_image(content_filename, max_size=content_size_limit)
 style_filename = 'images/star.jpg'
 style_image = load_image(style_filename, max_size=style_size_limit)
 
-# content_layer_ids  = [4]
-# style_layer_ids = list(range(13))
+content_layer_ids  = [4]
+style_layer_ids = list(range(13))
 
-content_layer_ids  = [7]
-style_layer_ids = [0, 2, 4, 7, 10]
+# content_layer_ids  = [7]
+# style_layer_ids = [0, 2, 4, 7, 10]
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Sytle Transfer
 weight_content=1.5
-weight_style=1.0
-weight_denoise=0.01
+weight_style=12.0
+weight_denoise=1.5
 num_iterations = 600
 step_size = 10
 disp_interval = 200

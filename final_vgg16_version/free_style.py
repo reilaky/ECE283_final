@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import tensorflow as tf
 import numpy as np
 import PIL.Image
@@ -30,36 +31,6 @@ def load_image(filename, max_size=None):
 
     # Convert to numpy floating-point array.
     return np.float32(image)
-
-
-def plot_images(content_image, style_image, mixed_image):
-    # Create figure with sub-plots.
-    fig, axes = plt.subplots(1, 3, figsize=(10, 10))
-
-    # Adjust vertical spacing.
-    fig.subplots_adjust(hspace=0.1, wspace=0.1)
-
-    # Plot the content-image.
-    # Note that the pixel-values are normalized to
-    # the [0.0, 1.0] range by dividing with 255.
-    ax = axes.flat[0]
-    ax.imshow(content_image / 255.0)
-    ax.set_xlabel("Content")
-
-    # Plot the mixed-image.
-    ax = axes.flat[1]
-    ax.imshow(mixed_image / 255.0)
-    ax.set_xlabel("Mixed")
-
-    # Plot the style-image
-    ax = axes.flat[2]
-    ax.imshow(style_image / 255.0)
-    ax.set_xlabel("Style")
-
-    # Remove ticks from all the plots.
-    for ax in axes.flat:
-        ax.set_xticks([])
-        ax.set_yticks([])
 
 def create_content_loss(session, model, content_image, layer_ids):
     feed_dict = model.create_feed_dict(image=content_image)
@@ -126,33 +97,30 @@ def create_denoise_loss(model):
     return loss
 
 #-----------------------------------------------------------------------------------------------------------------------
-img_size_limit = 400
+# Prepare images
+content_size_limit = 500
+style_size_limit = 500
 
-content_filename = 'images/ucsb.jpg'
-content_image = load_image(content_filename, max_size=img_size_limit)
+content_filename = 'images/goleta.jpg'
+content_image = load_image(content_filename, max_size=content_size_limit)
 
-style_filename = 'images/style2.jpg'
-style_image = load_image(style_filename, max_size=img_size_limit)
+style_filename = 'images/star.jpg'
+style_image = load_image(style_filename, max_size=style_size_limit)
 
-content_layer_ids  = [4]
-style_layer_ids = list(range(13))
+# content_layer_ids  = [4]
+# style_layer_ids = list(range(13))
 
-# img = style_transfer(content_image=content_image,
-#                      style_image=style_image,
-#                      content_layer_ids=content_layer_ids,
-#                      style_layer_ids=style_layer_ids,
-#                      weight_content=1.5,
-#                      weight_style=10.0,
-#                      weight_denoise=0.3,
-#                      num_iterations=600,
-#                      step_size=10.0)
+content_layer_ids  = [7]
+style_layer_ids = [0, 2, 4, 7, 10]
 
-#---------------------- Sytle Transfer ----------------------
+#-----------------------------------------------------------------------------------------------------------------------
+# Sytle Transfer
 weight_content=1.5
-weight_style=10.0
-weight_denoise=0.3
+weight_style=1.0
+weight_denoise=0.01
 num_iterations = 600
 step_size = 10
+disp_interval = 200
 
 model = vgg16.VGG16()
 
@@ -207,23 +175,26 @@ loss_combined = weight_content * adj_content * loss_content + \
 gradient = tf.gradients(loss_combined, model.input)
 
 # List of tensors that we will run in each optimization iteration.
-run_list = [gradient, update_adj_content, update_adj_style, \
-            update_adj_denoise]
+run_list = [gradient, update_adj_content, update_adj_style, update_adj_denoise]
 
-# The mixed-image is initialized with random noise.
-# It is the same size as the content-image.
-# where we first init it
+# The mixed-image is initialized with random noise with the same size as the content-image.
 mixed_image_filename = 'images/white_noise.jpg'
 temp = image.load_img(mixed_image_filename, target_size=(content_image.shape[0], content_image.shape[1]))
 mixed_image = image.img_to_array(temp)
+
+row_num = int(num_iterations/disp_interval)
+plt.figure()
+plt.get_current_fig_manager().window.wm_geometry("1400x900+20+20")
+gs = gridspec.GridSpec(row_num, 3)
+gs.update(wspace=0.05, hspace=0.2)
+plt_count = 0
 
 for i in range(num_iterations):
     # Create a feed-dict with the mixed-image.
     feed_dict = model.create_feed_dict(image=mixed_image)
 
     # Calculate the value of the gradient and update the adjustment values.
-    grad, adj_content_val, adj_style_val, adj_denoise_val \
-        = session.run(run_list, feed_dict=feed_dict)
+    grad, adj_content_val, adj_style_val, adj_denoise_val = session.run(run_list, feed_dict=feed_dict)
 
     grad = np.squeeze(grad)
 
@@ -236,18 +207,30 @@ for i in range(num_iterations):
     # Ensure the image has valid pixel-values between 0 and 255.
     mixed_image = np.clip(mixed_image, 0.0, 255.0)
 
-    # Display status once every 10 iterations, and the last.
-    if ((i+1) % 200 == 0):
-        print()
-        print("Iteration:", i)
+    if ((i+1) % disp_interval == 0):
+        msg = "Iteration {0:d}: Weight Adj. for Content: {1:.2e}, Style: {2:.2e}, Denoise: {3:.2e}"
+        print(msg.format(i,adj_content_val, adj_style_val, adj_denoise_val))
 
-        # Print adjustment weights for loss-functions.
-        msg = "Weight Adj. for Content: {0:.2e}, Style: {1:.2e}, Denoise: {2:.2e}"
-        print(msg.format(adj_content_val, adj_style_val, adj_denoise_val))
+        plt.subplot(gs[plt_count])
+        plt.imshow(content_image / 255.0)
+        plt.xticks([])
+        plt.yticks([])
+        plt.ylabel("Iteration {:d}".format(i))
+        plt.title("Content")
 
-        # Plot the content-, style- and mixed-images.
-        plot_images(content_image=content_image, style_image=style_image, mixed_image=mixed_image)
+        plt.subplot(gs[plt_count+1])
+        plt.imshow(mixed_image / 255.0)
+        plt.axis('off')
+        plt.title("Mixed")
+
+        plt.subplot(gs[plt_count+2])
+        plt.imshow(style_image / 255.0)
+        plt.axis('off')
+        plt.title("Style")
+
+        plt_count += 3
 
 session.close()
 
 plt.show()
+

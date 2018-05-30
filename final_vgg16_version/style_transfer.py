@@ -50,7 +50,7 @@ def plot_image_big(image):
     # Convert to a PIL-image and display it.
     plt.figure()
     plt.imshow(PIL.Image.fromarray(image))
-    plt.show()
+    #plt.show()
 
 def plot_images(content_image, style_image, mixed_image):
     # Create figure with sub-plots.
@@ -92,7 +92,7 @@ def plot_images(content_image, style_image, mixed_image):
     
     # Ensure the plot is shown correctly with multiple plots
     # in a single Notebook cell.
-    plt.show()
+    # plt.show()
 
 def mean_squared_error(a, b):
     return tf.reduce_mean(tf.square(a - b))
@@ -433,7 +433,7 @@ def style_transfer(content_image, style_image,
     # Return the mixed-image.
     return mixed_image
 
-content_filename = 'images/willy_wonka_new.jpg'
+content_filename = 'images/test.jpeg'
 content_image = load_image(content_filename, max_size=None)
 
 style_filename = 'images/style2.jpg'
@@ -451,4 +451,4 @@ img = style_transfer(content_image=content_image,
                      weight_denoise=0.3,
                      num_iterations=60,
                      step_size=10.0)
-save_image(img, 'style_transfer')
+save_image(img, 'style_transfer' + str(time.time()) + '.jpg')

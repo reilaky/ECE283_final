@@ -377,7 +377,6 @@ def style_transfer(content_image, style_image,
     temp = image.load_img(mixed_image_filename, target_size=(content_image.shape[0], content_image.shape[1]))
     mixed_image = image.img_to_array(temp)
 
-
     for i in range(num_iterations):
         # Create a feed-dict with the mixed-image.
         feed_dict = model.create_feed_dict(image=mixed_image)
@@ -409,7 +408,7 @@ def style_transfer(content_image, style_image,
         print(". ", end="")
 
         # Display status once every 10 iterations, and the last.
-        if (i % 10 == 0) or (i == num_iterations - 1):
+        if (i % 100 == 0) or (i == num_iterations - 1):
             print()
             print("Iteration:", i)
 
@@ -449,6 +448,6 @@ img = style_transfer(content_image=content_image,
                      weight_content=1.5,
                      weight_style=10.0,
                      weight_denoise=0.3,
-                     num_iterations=60,
+                     num_iterations=600,
                      step_size=10.0)
 save_image(img, 'style_transfer' + str(time.time()) + '.jpg')

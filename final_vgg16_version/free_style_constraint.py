@@ -46,6 +46,10 @@ def create_content_loss(session, model, content_image, layer_ids):
         for value, layer in zip(values, layers):
             # The loss-function for this layer: Mean Squared Error
             loss =  tf.reduce_mean(tf.square(layer - tf.constant(value)))
+
+            # loss += 1000*tf.reduce_mean(tf.nn.l2_loss(layer))
+            # loss += tf.reduce_mean(tf.losses.absolute_difference(layer,tf.zeros_like(layer)))
+
             layer_losses.append(loss)
 
         # The combined loss for all layers
@@ -83,6 +87,10 @@ def create_style_loss(session, model, style_image, layer_ids):
 
         for value, gram_layer in zip(values, gram_layers):
             loss = tf.reduce_mean(tf.square(gram_layer - tf.constant(value)))
+
+            # loss += 0.00002 * tf.reduce_mean(tf.nn.l2_loss(gram_layer))
+            # loss += 100*tf.reduce_sum(tf.losses.absolute_difference(gram_layer, tf.zeros_like(gram_layer)))
+
             layer_losses.append(loss)
 
         # The combined loss for all layers
@@ -95,11 +103,13 @@ def create_style_loss(session, model, style_image, layer_ids):
 content_size_limit = 500
 style_size_limit = 500
 
-content_filename = 'images/goleta.jpg'
+# content_filename = 'images/goleta.jpg'
+# content_filename = 'images/white_noise.jpg'
+content_filename = 'images/ucsb.jpg'
 content_image = load_image(content_filename, max_size=content_size_limit)
 
-# style_filename = 'images/star.jpg'
-style_filename = 'images/style2.jpg'
+style_filename = 'images/star.jpg'
+# style_filename = 'images/style2.jpg'
 style_image = load_image(style_filename, max_size=style_size_limit)
 
 content_layer_ids  = [4]
@@ -110,11 +120,11 @@ style_layer_ids = list(range(13))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Sytle Transfer
-weight_content=1.5
-weight_style=12.0
-num_iterations = 600
+weight_content = 1.0
+weight_style = 1000.0
 step_size = 10
-disp_interval = 200
+num_iterations = 200
+disp_interval = 100
 
 model = vgg16.VGG16()
 
@@ -149,9 +159,7 @@ adj_style = tf.Variable(1e-10, name='adj_style')
 session.run([adj_content.initializer, adj_style.initializer])
 
 # Create TensorFlow operations for updating the adjustment values.
-# These are basically just the reciprocal values of the
-# loss-functions, with a small value 1e-10 added to avoid the
-# possibility of division by zero.
+# These are basically just the reciprocal values of the loss-functions
 update_adj_content = adj_content.assign(1.0 / (loss_content + 1e-10))
 update_adj_style = adj_style.assign(1.0 / (loss_style + 1e-10))
 
@@ -164,7 +172,9 @@ gradient = tf.gradients(loss_combined, model.input)
 run_list = [gradient, update_adj_content, update_adj_style]
 
 # The mixed-image is initialized with random noise with the same size as the content-image.
-mixed_image_filename = 'images/goleta.jpg'
+mixed_image_filename = 'images/ucsb.jpg'
+# mixed_image_filename = 'images/goleta.jpg'
+
 temp = image.load_img(mixed_image_filename, target_size=(content_image.shape[0], content_image.shape[1]))
 mixed_image = image.img_to_array(temp)
 

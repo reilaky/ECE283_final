@@ -22,12 +22,12 @@ from keras import backend as K
 parser = argparse.ArgumentParser(description='Deep Dreams with Keras.')
 parser.add_argument('base_image_path', metavar='base', type=str,
                     help='Path to the image to transform.')
-parser.add_argument('result_prefix', metavar='res_prefix', type=str,
-                    help='Prefix for the saved results.')
+# parser.add_argument('result_prefix', metavar='res_prefix', type=str,
+#                     help='Prefix for the saved results.')
 
 args = parser.parse_args()
 base_image_path = args.base_image_path
-result_prefix = args.result_prefix
+# result_prefix = args.result_prefix
 
 # These are the names of the layers
 # for which we try to maximize activation,
@@ -155,7 +155,7 @@ and compare the result to the (resized) original image.
 step = 0.01  # Gradient ascent step size
 num_octave = 3  # Number of scales at which to run gradient ascent
 octave_scale = 1.4  # Size ratio between scales
-iterations = 50  # Number of ascent steps per scale
+iterations = 5000  # Number of ascent steps per scale
 max_loss = 10.
 
 img = preprocess_image(base_image_path)

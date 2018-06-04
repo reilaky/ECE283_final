@@ -1,2 +1,3 @@
 *.tfmodel
 */__pycache__
+fig/

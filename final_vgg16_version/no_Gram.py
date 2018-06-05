@@ -32,31 +32,6 @@ def load_image(filename, max_size=None):
     # Convert to numpy floating-point array.
     return np.float32(image)
 
-def create_content_loss(session, model, content_image, layer_ids):
-    feed_dict = model.create_feed_dict(image=content_image)
-
-    layers = model.get_layer_tensors(layer_ids)
-
-    # Calculate the output values of those layers when feeding the content-image to the model.
-    values = session.run(layers, feed_dict=feed_dict)
-
-    with model.graph.as_default():
-        layer_losses = []
-
-        for value, layer in zip(values, layers):
-            # The loss-function for this layer: Mean Squared Error
-            loss =  tf.reduce_mean(tf.square(layer - tf.constant(value)))
-
-            # loss += 1000*tf.reduce_mean(tf.nn.l2_loss(layer))
-            # loss += tf.reduce_mean(tf.losses.absolute_difference(layer,tf.zeros_like(layer)))
-
-            layer_losses.append(loss)
-
-        # The combined loss for all layers
-        total_loss = tf.reduce_mean(layer_losses)
-
-    return total_loss
-
 def gram_matrix(tensor):
     # gram matrix of the feature activations of a style layer
 
@@ -103,56 +78,52 @@ def create_style_loss(session, model, style_image, layer_ids):
 content_size_limit = 500
 style_size_limit = 500
 
-# content_filename = 'images/goleta.jpg'
+content_filename = 'images/goleta.jpg'
 # content_filename = 'images/ucsb.jpg'
-content_filename = 'images/compare.jpg'
 content_image = load_image(content_filename, max_size=content_size_limit)
 
 # style_filename = 'images/star.jpg'
-# style_filename = 'images/style3.jpg'
+style_filename = 'images/style3.jpg'
 # style_filename = 'images/style9.jpg'
 # style_filename = 'images/Pablo Picasso - Seated Woman, 1946.jpg'
-style_filename = 'images/theScream.jpg'
+# style_filename = 'images/theScream.jpg'
 # style_filename = 'images/style5.jpg'
-# style_filename = 'images/woods.jpg'
 # style_filename = 'images/'
 # style_filename = 'images/'
 
 style_image = load_image(style_filename, max_size=style_size_limit)
 
-content_layer_ids  = [8]
-
-# style_layer_ids = list(range(13))
-style_layer_ids = [0, 2, 4, 7, 10]
+# style_layer_ids = [0, 2, 4, 7, 10]
+style_layer_ids = list(range(13))
+# style_layer_ids = list(range(7,13))
+# style_layer_ids = list(range(2))
+# style_layer_ids = [0, 1, 10, 11, 12]
+# style_layer_ids = [0, 1, 7, 8, 9]
+# style_layer_ids = [0, 1, 4, 5, 6]
+# style_layer_ids = list(range(10))
+# style_layer_ids = list(range(7))
+# style_layer_ids = list(range(4))
+# style_layer_ids = list(range(2,4))
+# style_layer_ids = list(range(4,7))
+# style_layer_ids = list(range(7,10))
+# style_layer_ids = list(range(10,13))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Sytle Transfer
-weight_content = 1.0
-weight_style = 200.0
+weight_style = 1.0
 step_size = 10
 # num_iterations = 200
-num_iterations = 20
+num_iterations = 50
 disp_interval = num_iterations
 
 model = vgg16.VGG16()
 
 session = tf.InteractiveSession(graph=model.graph)
 
-# Print the names of the content-layers.
-print("Content layers:")
-print(model.get_layer_names(content_layer_ids))
-print()
-
 # Print the names of the style-layers.
 print("Style layers:")
 print(model.get_layer_names(style_layer_ids))
 print()
-
-# Create the loss-function for the content-layers and -image.
-loss_content = create_content_loss(session=session,
-                                   model=model,
-                                   content_image=content_image,
-                                   layer_ids=content_layer_ids)
 
 # Create the loss-function for the style-layers and -image.
 loss_style = create_style_loss(session=session,
@@ -168,19 +139,14 @@ session.run([adj_content.initializer, adj_style.initializer])
 
 # Create TensorFlow operations for updating the adjustment values.
 # These are basically just the reciprocal values of the loss-functions
-update_adj_content = adj_content.assign(1.0 / (loss_content + 1e-10))
 update_adj_style = adj_style.assign(1.0 / (loss_style + 1e-10))
 
 loss_combined = weight_style * adj_style * loss_style
 
-# loss_combined = weight_content * adj_content * loss_content + \
-#                 weight_style * adj_style * loss_style
-# loss_combined = weight_content * loss_content + weight_style * loss_style
-
 gradient = tf.gradients(loss_combined, model.input)
 
 # List of tensors that we will run in each optimization iteration.
-run_list = [gradient, update_adj_content, update_adj_style]
+run_list = [gradient, update_adj_style]
 
 # The mixed-image is initialized with random noise with the same size as the content-image.
 # mixed_image_filename = 'images/ucsb.jpg'
@@ -201,7 +167,7 @@ for i in range(num_iterations):
     feed_dict = model.create_feed_dict(image=mixed_image)
 
     # Calculate the value of the gradient and update the adjustment values.
-    grad, adj_content_val, adj_style_val = session.run(run_list, feed_dict=feed_dict)
+    grad, adj_style_val = session.run(run_list, feed_dict=feed_dict)
 
     grad = np.squeeze(grad)
 
@@ -215,8 +181,8 @@ for i in range(num_iterations):
     mixed_image = np.clip(mixed_image, 0.0, 255.0)
 
     if ((i+1) % disp_interval == 0):
-        msg = "Iteration {0:d}: Weight Adj. for Content: {1:.2e}, Style: {2:.2e}"
-        print(msg.format(i+1,adj_content_val, adj_style_val))
+        msg = "Iteration {0:d}: Weight Adj for Style: {1:.2e}"
+        print(msg.format(i+1, adj_style_val))
 
         plt.subplot(gs[plt_count])
         plt.imshow(content_image / 255.0)

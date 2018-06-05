@@ -78,31 +78,44 @@ def create_style_loss(session, model, style_image, layer_ids):
 content_size_limit = 500
 style_size_limit = 500
 
-content_filename = 'images/goleta.jpg'
+# content_filename = 'images/goleta.jpg'
 # content_filename = 'images/ucsb.jpg'
+content_filename = 'images/compare.jpg'
 content_image = load_image(content_filename, max_size=content_size_limit)
 
 # style_filename = 'images/star.jpg'
 # style_filename = 'images/style3.jpg'
 # style_filename = 'images/style9.jpg'
 # style_filename = 'images/Pablo Picasso - Seated Woman, 1946.jpg'
-# style_filename = 'images/theScream.jpg'
-style_filename = 'images/style5.jpg'
-# style_filename = 'images/woods.jpg'
+style_filename = 'images/theScream.jpg'
+# style_filename = 'images/style5.jpg'
 # style_filename = 'images/'
 # style_filename = 'images/'
 
 style_image = load_image(style_filename, max_size=style_size_limit)
 
-style_layer_ids = list(range(13))
+style_layer_ids = [0, 2, 4, 7, 10]
+# style_layer_ids = list(range(13))
+# style_layer_ids = list(range(7,13))
+# style_layer_ids = [0, 1, 10, 11, 12]
+# style_layer_ids = [0, 1, 7, 8, 9]
+# style_layer_ids = [0, 1, 4, 5, 6]
+# style_layer_ids = list(range(10))
+# style_layer_ids = list(range(7))
+# style_layer_ids = list(range(4))
+# style_layer_ids = list(range(2))
+# style_layer_ids = list(range(2,4))
+# style_layer_ids = list(range(4,7))
+# style_layer_ids = list(range(7,10))
+# style_layer_ids = list(range(10,13))
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Sytle Transfer
-weight_content = 1.0
-weight_style = 1000.0
+weight_style = 1.0
 step_size = 10
+# num_iterations = 2000
 # num_iterations = 200
-num_iterations = 50
+num_iterations = 30
 disp_interval = num_iterations
 
 model = vgg16.VGG16()
